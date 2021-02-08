@@ -18,7 +18,7 @@ func enum_to_string(the_enum: Dictionary, value: int) -> String:
 func _ready() -> void:
 	core = Discord.Core.new()
 	var result: int = core.create(
-		793449535632441374,
+		807697044516372541,
 		Discord.CreateFlags.DEFAULT
 	)
 	print("Created Discord Core: ", enum_to_string(Discord.Result, result))
@@ -42,8 +42,8 @@ func _ready() -> void:
 
 		activity.assets.large_image = "blurpgodot"
 		activity.assets.large_text = "Godot Discord Game SDK"
-		activity.assets.small_text = "Mini Godot"
 		activity.assets.small_image = "blurpgodot"
+		activity.assets.small_text = "Mini Godot"
 
 		activity.timestamps.start = OS.get_unix_time()
 
