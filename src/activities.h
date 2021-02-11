@@ -113,12 +113,6 @@ GDCALLINGCONV void activity_party_set_id(godot_object *p_instance, Library *p_li
                                          ActivityParty *p_party,
                                          godot_variant *p_id);
 
-godot_variant activity_party_get_privacy(godot_object *p_instance, Library *p_lib,
-                                         ActivityParty *p_party);
-GDCALLINGCONV void activity_party_set_privacy(godot_object *p_instance, Library *p_lib,
-                                              ActivityParty *p_party,
-                                              godot_variant *p_privacy);
-
 godot_variant activity_party_get_size(godot_object *p_instance, Library *p_lib,
                                       ActivityParty *p_party);
 GDCALLINGCONV void activity_party_set_size(godot_object *p_instance, Library *p_lib,
@@ -228,12 +222,6 @@ GDCALLINGCONV void activity_set_instance(godot_object *p_instance, Library *p_li
                                          Activity *p_activity,
                                          godot_variant *p_is_instance);
 
-godot_variant activity_get_supported_platforms(godot_object *p_instance, Library *p_lib,
-                                               Activity *p_activity);
-GDCALLINGCONV void activity_set_supported_platforms(godot_object *p_instance, Library *p_lib,
-                                                    Activity *p_activity,
-                                                    godot_variant *p_supported_platforms);
-
 void activity_collapse(godot_object *p_instance, Library *p_lib);
 
 void register_activity(void *p_handle, Library *p_lib);
@@ -263,6 +251,28 @@ godot_variant activity_manager_update_activity(godot_object *p_instance, Library
                                                ActivityManager *p_activity_manager,
                                                int p_num_args, godot_variant **p_args);
 
+godot_variant activity_manager_clear_activity(godot_object *p_instance, Library *p_lib,
+                                              ActivityManager *p_activity_manager,
+                                              int p_num_args, godot_variant **p_args);
+
+godot_variant activity_manager_send_request_reply(godot_object *p_instance, Library *p_lib,
+                                                  ActivityManager *p_activity_manager,
+                                                  int p_num_args, godot_variant **p_args);
+
+godot_variant activity_manager_send_invite(godot_object *p_instance, Library *p_lib,
+                                           ActivityManager *p_activity_manager,
+                                           int p_num_args, godot_variant **p_args);
+
+godot_variant activity_manager_accept_invite(godot_object *p_instance, Library *p_lib,
+                                             ActivityManager *p_activity_manager,
+                                             int p_num_args, godot_variant **p_args);
+
 void register_activity_manager(void *p_handle, Library *p_lib);
+
+void on_activity_join(Core *p_core, const char *p_join_secret);
+void on_activity_spectate(Core *p_core, const char *p_spectate_secret);
+void on_activity_join_request(Core *p_core, struct DiscordUser *p_user);
+void on_activity_invite(Core *p_core, enum EDiscordActivityActionType p_type,
+                        struct DiscordUser *p_user, struct DiscordActivity *p_activity);
 
 #endif

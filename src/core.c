@@ -14,15 +14,22 @@ GDCALLINGCONV void *core_constructor(godot_object *p_instance, Library *p_lib)
 GDCALLINGCONV void core_destructor(godot_object *p_instance, Library *p_lib,
                                    Core *p_core)
 {
+    if (p_core->users)
+        godot_unreference(p_core->users, p_lib);
+    if (p_core->images)
+        godot_unreference(p_core->images, p_lib);
+    if (p_core->activities)
+        godot_unreference(p_core->activities, p_lib);
+
+    if (p_core->hook_data)
+        p_lib->api->godot_free(p_core->hook_data);
+
     if (p_core->internal)
     {
         p_core->internal->destroy(p_core->internal);
         p_lib->api->godot_free(p_core->user_events);
     }
-    if (p_core->hook_data)
-    {
-        p_lib->api->godot_free(p_core->hook_data);
-    }
+
     p_lib->api->godot_free(p_core);
 }
 
@@ -32,10 +39,22 @@ godot_variant core_create(godot_object *p_instance, Library *p_lib,
 {
     godot_variant result_variant;
 
-    if (p_num_args == 2)
+    if (p_num_args == 2 || p_num_args == 3)
     {
         uint64_t id = p_lib->api->godot_variant_as_uint(p_args[0]);
         uint64_t create_flags = p_lib->api->godot_variant_as_uint(p_args[1]);
+        if (p_num_args == 3)
+        {
+            uint64_t instance_id = p_lib->api->godot_variant_as_uint(p_args[2]);
+            char instance[128];
+            memset(instance, 0, sizeof(char) * 128);
+            sprintf(instance, "%Iu", instance_id);
+#ifdef _WIN32
+            _putenv_s("DISCORD_INSTANCE_ID", instance);
+#else
+            setenv("DISCORD_INSTANCE_ID", instance, true);
+#endif
+        }
 
         struct DiscordCreateParams params;
         memset(&params, 0, sizeof(struct DiscordCreateParams));
@@ -47,6 +66,13 @@ godot_variant core_create(godot_object *p_instance, Library *p_lib,
         p_core->user_events = p_lib->api->godot_alloc(sizeof(struct IDiscordUserEvents));
         p_core->user_events->on_current_user_update = on_current_user_update;
         params.user_events = p_core->user_events;
+
+        p_core->activity_events = p_lib->api->godot_alloc(sizeof(struct IDiscordActivityEvents));
+        p_core->activity_events->on_activity_join = on_activity_join;
+        p_core->activity_events->on_activity_spectate = on_activity_spectate;
+        p_core->activity_events->on_activity_join_request = on_activity_join_request;
+        p_core->activity_events->on_activity_invite = on_activity_invite;
+        params.activity_events = p_core->activity_events;
 
         enum EDiscordResult result = DiscordCreate(DISCORD_VERSION, &params, &p_core->internal);
 
@@ -65,8 +91,8 @@ godot_variant core_create(godot_object *p_instance, Library *p_lib,
     return result_variant;
 }
 
-void DISCORD_API log_hook(CallbackData *p_data,
-                          enum EDiscordLogLevel p_level, const char *p_message)
+void log_hook(CallbackData *p_data,
+              enum EDiscordLogLevel p_level, const char *p_message)
 {
     Library *lib = p_data->lib;
 

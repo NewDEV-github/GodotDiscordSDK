@@ -558,23 +558,6 @@ GDCALLINGCONV void activity_party_set_id(godot_object *p_instance, Library *p_li
     memcpy(p_party->internal->id, id, sizeof(char) * MIN(size, 127));
 }
 
-godot_variant activity_party_get_privacy(godot_object *p_instance, Library *p_lib,
-                                         ActivityParty *p_party)
-{
-    godot_variant privacy;
-
-    p_lib->api->godot_variant_new_int(&privacy, p_party->internal->privacy);
-
-    return privacy;
-}
-
-GDCALLINGCONV void activity_party_set_privacy(godot_object *p_instance, Library *p_lib,
-                                              ActivityParty *p_party,
-                                              godot_variant *p_privacy)
-{
-    p_party->internal->privacy = p_lib->api->godot_variant_as_int(p_privacy);
-}
-
 godot_variant activity_party_get_size(godot_object *p_instance, Library *p_lib,
                                       ActivityParty *p_activity_party)
 {
@@ -653,32 +636,6 @@ void register_activity_party(void *p_handle, Library *p_lib)
 
             p_lib->nativescript_api->godot_nativescript_register_property(p_handle,
                                                                           "ActivityParty", "id",
-                                                                          &attributes,
-                                                                          set, get);
-        }
-        // Privacy
-        {
-            memset(&attributes, 0, sizeof(godot_property_attributes));
-            attributes.type = GODOT_VARIANT_TYPE_INT;
-            attributes.usage = GODOT_PROPERTY_USAGE_DEFAULT;
-            attributes.rset_type = GODOT_METHOD_RPC_MODE_DISABLED;
-
-            attributes.hint = GODOT_PROPERTY_HINT_ENUM;
-            attributes.hint_string = p_lib->api->godot_string_chars_to_utf8("Private,Public");
-
-            p_lib->api->godot_variant_new_int(&default_value, DiscordActivityPartyPrivacy_Private);
-            attributes.default_value = default_value;
-
-            memset(&get, 0, sizeof(godot_property_get_func));
-            get.get_func = activity_party_get_privacy;
-            get.method_data = p_lib;
-
-            memset(&set, 0, sizeof(godot_property_set_func));
-            set.set_func = activity_party_set_privacy;
-            set.method_data = p_lib;
-
-            p_lib->nativescript_api->godot_nativescript_register_property(p_handle,
-                                                                          "ActivityParty", "privacy",
                                                                           &attributes,
                                                                           set, get);
         }
@@ -918,10 +875,6 @@ GDCALLINGCONV void *activity_constructor(godot_object *p_instance, Library *p_li
                 Activity, struct DiscordActivity,
                 p_lib, p_instance);
 
-    activity->internal->supported_platforms = DiscordActivitySupportedPlatformFlags_Desktop |
-                                              DiscordActivitySupportedPlatformFlags_Android |
-                                              DiscordActivitySupportedPlatformFlags_iOS;
-
     activity->timestamps = instantiate_custom_class("ActivityTimestamps", "Resource", p_lib);
     godot_reference(activity->timestamps, p_lib);
 
@@ -1144,23 +1097,6 @@ GDCALLINGCONV void activity_set_instance(godot_object *p_instance, Library *p_li
                                          godot_variant *p_is_instance)
 {
     p_activity->internal->instance = p_lib->api->godot_variant_as_bool(p_is_instance);
-}
-
-godot_variant activity_get_supported_platforms(godot_object *p_instance, Library *p_lib,
-                                               Activity *p_activity)
-{
-    godot_variant supported_platforms;
-
-    p_lib->api->godot_variant_new_uint(&supported_platforms, p_activity->internal->supported_platforms);
-
-    return supported_platforms;
-}
-
-GDCALLINGCONV void activity_set_supported_platforms(godot_object *p_instance, Library *p_lib,
-                                                    Activity *p_activity,
-                                                    godot_variant *p_supported_platforms)
-{
-    p_activity->internal->supported_platforms = (uint32_t)p_lib->api->godot_variant_as_uint(p_supported_platforms);
 }
 
 void activity_collapse(godot_object *p_instance, Library *p_lib)
@@ -1440,35 +1376,6 @@ void register_activity(void *p_handle, Library *p_lib)
                                                                           &attributes,
                                                                           set, get);
         }
-        // Supported Platforms
-        {
-            memset(&get, 0, sizeof(godot_property_get_func));
-            attributes.type = GODOT_VARIANT_TYPE_INT;
-            attributes.usage = GODOT_PROPERTY_USAGE_DEFAULT;
-            attributes.rset_type = GODOT_METHOD_RPC_MODE_DISABLED;
-
-            attributes.hint = GODOT_PROPERTY_HINT_NONE;
-            attributes.hint_string = p_lib->api->godot_string_chars_to_utf8("");
-
-            p_lib->api->godot_variant_new_int(&default_value,
-                                              DiscordActivitySupportedPlatformFlags_Desktop |
-                                                  DiscordActivitySupportedPlatformFlags_Android |
-                                                  DiscordActivitySupportedPlatformFlags_iOS);
-            attributes.default_value = default_value;
-
-            memset(&get, 0, sizeof(godot_property_get_func));
-            get.get_func = activity_get_supported_platforms;
-            get.method_data = p_lib;
-
-            memset(&set, 0, sizeof(godot_property_set_func));
-            set.set_func = activity_set_supported_platforms;
-            set.method_data = p_lib;
-
-            p_lib->nativescript_api->godot_nativescript_register_property(p_handle,
-                                                                          "Activity", "supported_platforms",
-                                                                          &attributes,
-                                                                          set, get);
-        }
     }
 }
 
@@ -1533,8 +1440,8 @@ godot_variant activity_manager_register_steam(godot_object *p_instance, Library 
 
     return result_variant;
 }
-void DISCORD_API update_activity_callback(CallbackData *p_data,
-                                          enum EDiscordResult p_result)
+void update_activity_callback(CallbackData *p_data,
+                              enum EDiscordResult p_result)
 {
     Library *lib = p_data->lib;
 
@@ -1573,6 +1480,194 @@ godot_variant activity_manager_update_activity(godot_object *p_instance, Library
         p_activity_manager->internal->update_activity(p_activity_manager->internal,
                                                       activity->internal,
                                                       callback_data, update_activity_callback);
+    }
+    else
+    {
+        p_lib->api->godot_variant_new_int(&result_variant, DiscordResult_InvalidCommand);
+    }
+
+    return result_variant;
+}
+
+void clear_activity_callback(CallbackData *p_data,
+                             enum EDiscordResult p_result)
+{
+    Library *lib = p_data->lib;
+
+    godot_variant result_variant;
+
+    lib->api->godot_variant_new_int(&result_variant, p_result);
+
+    godot_variant *args[] = {&result_variant};
+
+    object_call(p_data->callback_object, &p_data->callback_name, 1, args, p_data->lib);
+
+    lib->api->godot_free(p_data);
+}
+
+godot_variant activity_manager_clear_activity(godot_object *p_instance, Library *p_lib,
+                                              ActivityManager *p_activity_manager,
+                                              int p_num_args, godot_variant **p_args)
+{
+    godot_variant result_variant;
+
+    if (p_num_args == 2) // Callback Object, Callback Name
+    {
+        godot_object *callback_object = p_lib->api->godot_variant_as_object(p_args[0]);
+        godot_string callback_name = p_lib->api->godot_variant_as_string(p_args[1]);
+
+        CallbackData *callback_data = p_lib->api->godot_alloc(sizeof(CallbackData));
+        callback_data->callback_object = callback_object;
+        callback_data->callback_name = callback_name;
+        callback_data->core = p_activity_manager->core;
+        callback_data->lib = p_lib;
+
+        p_activity_manager->internal->clear_activity(p_activity_manager->internal,
+                                                     callback_data, clear_activity_callback);
+    }
+    else
+    {
+        p_lib->api->godot_variant_new_int(&result_variant, DiscordResult_InvalidCommand);
+    }
+
+    return result_variant;
+}
+
+void send_request_reply_callback(CallbackData *p_data,
+                                 enum EDiscordResult p_result)
+{
+    Library *lib = p_data->lib;
+
+    godot_variant result_variant;
+
+    lib->api->godot_variant_new_int(&result_variant, p_result);
+
+    godot_variant *args[] = {&result_variant};
+
+    object_call(p_data->callback_object, &p_data->callback_name, 1, args, p_data->lib);
+
+    lib->api->godot_free(p_data);
+}
+
+godot_variant activity_manager_send_request_reply(godot_object *p_instance, Library *p_lib,
+                                                  ActivityManager *p_activity_manager,
+                                                  int p_num_args, godot_variant **p_args)
+{
+    godot_variant result_variant;
+
+    if (p_num_args == 4) // User ID, Reply, Callback Object, Callback Name
+    {
+        int64_t user_id = p_lib->api->godot_variant_as_int(p_args[0]);
+        enum EDiscordActivityJoinRequestReply reply = p_lib->api->godot_variant_as_int(p_args[1]);
+        godot_object *callback_object = p_lib->api->godot_variant_as_object(p_args[2]);
+        godot_string callback_name = p_lib->api->godot_variant_as_string(p_args[3]);
+
+        CallbackData *callback_data = p_lib->api->godot_alloc(sizeof(CallbackData));
+        callback_data->callback_object = callback_object;
+        callback_data->callback_name = callback_name;
+        callback_data->core = p_activity_manager->core;
+        callback_data->lib = p_lib;
+
+        p_activity_manager->internal->send_request_reply(p_activity_manager->internal,
+                                                         user_id, reply,
+                                                         callback_data, send_request_reply_callback);
+    }
+    else
+    {
+        p_lib->api->godot_variant_new_int(&result_variant, DiscordResult_InvalidCommand);
+    }
+
+    return result_variant;
+}
+
+void send_invite_callback(CallbackData *p_data,
+                          enum EDiscordResult p_result)
+{
+    Library *lib = p_data->lib;
+
+    godot_variant result_variant;
+
+    lib->api->godot_variant_new_int(&result_variant, p_result);
+
+    godot_variant *args[] = {&result_variant};
+
+    object_call(p_data->callback_object, &p_data->callback_name, 1, args, p_data->lib);
+
+    lib->api->godot_free(p_data);
+}
+
+godot_variant activity_manager_send_invite(godot_object *p_instance, Library *p_lib,
+                                           ActivityManager *p_activity_manager,
+                                           int p_num_args, godot_variant **p_args)
+{
+    godot_variant result_variant;
+
+    if (p_num_args == 5) // User ID, Type, Content, Callback Object, Callback Name
+    {
+        int64_t user_id = p_lib->api->godot_variant_as_int(p_args[0]);
+        enum EDiscordActivityActionType type = p_lib->api->godot_variant_as_int(p_args[1]);
+        godot_string content_string = p_lib->api->godot_variant_as_string(p_args[2]);
+        godot_object *callback_object = p_lib->api->godot_variant_as_object(p_args[3]);
+        godot_string callback_name = p_lib->api->godot_variant_as_string(p_args[4]);
+
+        godot_char_string content_char_string = p_lib->api->godot_string_utf8(&content_string);
+        const char *content = p_lib->api->godot_char_string_get_data(&content_char_string);
+
+        CallbackData *callback_data = p_lib->api->godot_alloc(sizeof(CallbackData));
+        callback_data->callback_object = callback_object;
+        callback_data->callback_name = callback_name;
+        callback_data->core = p_activity_manager->core;
+        callback_data->lib = p_lib;
+
+        p_activity_manager->internal->send_invite(p_activity_manager->internal,
+                                                  user_id, type, content,
+                                                  callback_data, send_invite_callback);
+    }
+    else
+    {
+        p_lib->api->godot_variant_new_int(&result_variant, DiscordResult_InvalidCommand);
+    }
+
+    return result_variant;
+}
+
+void accept_invite_callback(CallbackData *p_data,
+                            enum EDiscordResult p_result)
+{
+    Library *lib = p_data->lib;
+
+    godot_variant result_variant;
+
+    lib->api->godot_variant_new_int(&result_variant, p_result);
+
+    godot_variant *args[] = {&result_variant};
+
+    object_call(p_data->callback_object, &p_data->callback_name, 1, args, p_data->lib);
+
+    lib->api->godot_free(p_data);
+}
+
+godot_variant activity_manager_accept_invite(godot_object *p_instance, Library *p_lib,
+                                             ActivityManager *p_activity_manager,
+                                             int p_num_args, godot_variant **p_args)
+{
+    godot_variant result_variant;
+
+    if (p_num_args == 3) // User ID, Callback Object, Callback Name
+    {
+        int64_t user_id = p_lib->api->godot_variant_as_int(p_args[0]);
+        godot_object *callback_object = p_lib->api->godot_variant_as_object(p_args[1]);
+        godot_string callback_name = p_lib->api->godot_variant_as_string(p_args[2]);
+
+        CallbackData *callback_data = p_lib->api->godot_alloc(sizeof(CallbackData));
+        callback_data->callback_object = callback_object;
+        callback_data->callback_name = callback_name;
+        callback_data->core = p_activity_manager->core;
+        callback_data->lib = p_lib;
+
+        p_activity_manager->internal->accept_invite(p_activity_manager->internal,
+                                                    user_id,
+                                                    callback_data, accept_invite_callback);
     }
     else
     {
@@ -1633,5 +1728,236 @@ void register_activity_manager(void *p_handle, Library *p_lib)
                                                                         "ActivityManager", "update_activity",
                                                                         attributes, method);
         }
+        // Clear Activity
+        {
+            memset(&method, 0, sizeof(godot_instance_method));
+            method.method = activity_manager_clear_activity;
+            method.method_data = p_lib;
+
+            p_lib->nativescript_api->godot_nativescript_register_method(p_handle,
+                                                                        "ActivityManager", "clear_activity",
+                                                                        attributes, method);
+        }
+        // Send Request Reply
+        {
+            memset(&method, 0, sizeof(godot_instance_method));
+            method.method = activity_manager_send_request_reply;
+            method.method_data = p_lib;
+
+            p_lib->nativescript_api->godot_nativescript_register_method(p_handle,
+                                                                        "ActivityManager", "send_request_reply",
+                                                                        attributes, method);
+        }
+        // Send Invite
+        {
+            memset(&method, 0, sizeof(godot_instance_method));
+            method.method = activity_manager_send_invite;
+            method.method_data = p_lib;
+
+            p_lib->nativescript_api->godot_nativescript_register_method(p_handle,
+                                                                        "ActivityManager", "send_invite",
+                                                                        attributes, method);
+        }
+        // Accept Invite
+        {
+            memset(&method, 0, sizeof(godot_instance_method));
+            method.method = activity_manager_accept_invite;
+            method.method_data = p_lib;
+
+            p_lib->nativescript_api->godot_nativescript_register_method(p_handle,
+                                                                        "ActivityManager", "accept_invite",
+                                                                        attributes, method);
+        }
     }
+
+    // Signals
+    {
+        godot_signal signal;
+
+        // Activity Join
+        {
+            memset(&signal, 0, sizeof(godot_signal));
+            signal.name = p_lib->api->godot_string_chars_to_utf8("activity_join");
+
+            godot_signal_argument join_secret;
+            {
+                memset(&join_secret, 0, sizeof(godot_signal_argument));
+                join_secret.name = p_lib->api->godot_string_chars_to_utf8("join_secret");
+
+                join_secret.type = GODOT_VARIANT_TYPE_STRING;
+            }
+
+            godot_signal_argument args[] = {join_secret};
+            signal.args = args;
+            signal.num_args = 1;
+
+            p_lib->nativescript_api->godot_nativescript_register_signal(p_handle,
+                                                                        "ActivityManager", &signal);
+        }
+        // Spectate Join
+        {
+            memset(&signal, 0, sizeof(godot_signal));
+            signal.name = p_lib->api->godot_string_chars_to_utf8("activity_spectate");
+
+            godot_signal_argument spectate_secret;
+            {
+                memset(&spectate_secret, 0, sizeof(godot_signal_argument));
+                spectate_secret.name = p_lib->api->godot_string_chars_to_utf8("spectate_secret");
+
+                spectate_secret.type = GODOT_VARIANT_TYPE_STRING;
+            }
+
+            godot_signal_argument args[] = {spectate_secret};
+            signal.args = args;
+            signal.num_args = 1;
+
+            p_lib->nativescript_api->godot_nativescript_register_signal(p_handle,
+                                                                        "ActivityManager", &signal);
+        }
+        // Activity Join Request
+        {
+            memset(&signal, 0, sizeof(godot_signal));
+            signal.name = p_lib->api->godot_string_chars_to_utf8("activity_join_request");
+
+            godot_signal_argument user;
+            {
+                memset(&user, 0, sizeof(godot_signal_argument));
+                user.name = p_lib->api->godot_string_chars_to_utf8("user");
+
+                user.type = GODOT_VARIANT_TYPE_OBJECT;
+            }
+
+            godot_signal_argument args[] = {user};
+            signal.args = args;
+            signal.num_args = 1;
+
+            p_lib->nativescript_api->godot_nativescript_register_signal(p_handle,
+                                                                        "ActivityManager", &signal);
+        }
+        // Activity Invite
+        {
+            memset(&signal, 0, sizeof(godot_signal));
+            signal.name = p_lib->api->godot_string_chars_to_utf8("activity_invite");
+
+            godot_signal_argument type;
+            {
+                memset(&type, 0, sizeof(godot_signal_argument));
+                type.name = p_lib->api->godot_string_chars_to_utf8("type");
+
+                type.type = GODOT_VARIANT_TYPE_INT;
+            }
+            godot_signal_argument user;
+            {
+                memset(&user, 0, sizeof(godot_signal_argument));
+                user.name = p_lib->api->godot_string_chars_to_utf8("user");
+
+                user.type = GODOT_VARIANT_TYPE_OBJECT;
+            }
+            godot_signal_argument activity;
+            {
+                memset(&activity, 0, sizeof(godot_signal_argument));
+                activity.name = p_lib->api->godot_string_chars_to_utf8("activity");
+
+                activity.type = GODOT_VARIANT_TYPE_OBJECT;
+            }
+
+            godot_signal_argument args[] = {type, user, activity};
+            signal.args = args;
+            signal.num_args = 3;
+
+            p_lib->nativescript_api->godot_nativescript_register_signal(p_handle,
+                                                                        "ActivityManager", &signal);
+        }
+    }
+}
+
+void on_activity_join(Core *p_core, const char *p_join_secret)
+{
+    Library *lib = p_core->lib;
+
+    godot_string signal = p_core->lib->api->godot_string_chars_to_utf8("activity_join");
+
+    godot_variant join_secret_variant;
+
+    godot_string join_secret_string = lib->api->godot_string_chars_to_utf8(p_join_secret);
+    lib->api->godot_variant_new_string(&join_secret_variant, &join_secret_string);
+
+    godot_variant *args[] = {&join_secret_variant};
+
+    object_emit_signal(p_core->activities->object, &signal, 1, args, p_core->lib);
+}
+
+void on_activity_spectate(Core *p_core, const char *p_spectate_secret)
+{
+    Library *lib = p_core->lib;
+
+    godot_string signal = p_core->lib->api->godot_string_chars_to_utf8("activity_spectate");
+
+    godot_variant spectate_secret_variant;
+
+    godot_string spectate_secret_string = lib->api->godot_string_chars_to_utf8(p_spectate_secret);
+    lib->api->godot_variant_new_string(&spectate_secret_variant, &spectate_secret_string);
+
+    godot_variant *args[] = {&spectate_secret_variant};
+
+    object_emit_signal(p_core->activities->object, &signal, 1, args, p_core->lib);
+}
+
+void on_activity_join_request(Core *p_core, struct DiscordUser *p_user)
+{
+    Library *lib = p_core->lib;
+
+    godot_string signal = p_core->lib->api->godot_string_chars_to_utf8("activity_join_request");
+
+    godot_variant user_variant;
+
+    godot_object *user_object = instantiate_custom_class("User", "Resource", lib);
+    User *user = lib->nativescript_api->godot_nativescript_get_userdata(user_object);
+    memcpy(user->internal, p_user, sizeof(struct DiscordUser));
+
+    lib->api->godot_variant_new_object(&user_variant, user_object);
+
+    godot_variant *args[] = {&user_variant};
+
+    object_emit_signal(p_core->activities->object, &signal, 1, args, p_core->lib);
+}
+
+void on_activity_invite(Core *p_core, enum EDiscordActivityActionType p_type,
+                        struct DiscordUser *p_user, struct DiscordActivity *p_activity)
+{
+    Library *lib = p_core->lib;
+
+    godot_string signal = p_core->lib->api->godot_string_chars_to_utf8("activity_invite");
+
+    godot_variant type_variant;
+    godot_variant user_variant;
+    godot_variant activity_variant;
+
+    lib->api->godot_variant_new_int(&type_variant, p_type);
+
+    godot_object *user_object = instantiate_custom_class("User", "Resource", lib);
+    User *user = lib->nativescript_api->godot_nativescript_get_userdata(user_object);
+    memcpy(user->internal, p_user, sizeof(struct DiscordUser));
+
+    lib->api->godot_variant_new_object(&user_variant, user_object);
+
+    godot_object *activity_object = instantiate_custom_class("Activity", "Resource", lib);
+    Activity *activity = lib->nativescript_api->godot_nativescript_get_userdata(activity_object);
+    memcpy(activity->internal, p_activity, sizeof(struct DiscordActivity));
+    ActivityTimestamps *activity_timestamps = lib->nativescript_api->godot_nativescript_get_userdata(activity->timestamps);
+    memcpy(activity_timestamps->internal, &p_activity->timestamps, sizeof(struct DiscordActivityTimestamps));
+    ActivityAssets *activity_assets = lib->nativescript_api->godot_nativescript_get_userdata(activity->assets);
+    memcpy(activity_assets->internal, &p_activity->assets, sizeof(struct DiscordActivityAssets));
+    ActivityParty *activity_party = lib->nativescript_api->godot_nativescript_get_userdata(activity->party);
+    memcpy(activity_party->internal, &p_activity->party, sizeof(struct DiscordActivityParty));
+    PartySize *party_size = lib->nativescript_api->godot_nativescript_get_userdata(activity_party->size);
+    memcpy(party_size->internal, &p_activity->party.size, sizeof(struct DiscordPartySize));
+    ActivitySecrets *activity_secrets = lib->nativescript_api->godot_nativescript_get_userdata(activity->secrets);
+    memcpy(activity_secrets->internal, &p_activity->secrets, sizeof(struct DiscordActivitySecrets));
+
+    lib->api->godot_variant_new_object(&activity_variant, activity_object);
+
+    godot_variant *args[] = {&type_variant, &user_variant, &activity_variant};
+
+    object_emit_signal(p_core->activities->object, &signal, 3, args, p_core->lib);
 }

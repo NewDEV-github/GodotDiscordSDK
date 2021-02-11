@@ -49,6 +49,7 @@ func _ready() -> void:
 
 		activities.update_activity(activity, self, "update_activity_callback")
 
+
 func _process(_delta: float) -> void:
 	if core:
 		var result: int = core.run_callbacks()
@@ -180,7 +181,7 @@ func fetch_callback(result: int, handle: Discord.ImageHandle) -> void:
 
 func update_activity_callback(result: int):
 	if result == Discord.Result.OK:
-		print("Updated Activity Successfully")
+		print("Updated activity successfully!")
 	else:
 		print(
 			"Failed to update activity: ",
